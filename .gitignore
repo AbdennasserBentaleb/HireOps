@@ -1,0 +1,39 @@
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Local Maven binary (not needed — use system Maven or mvnw)
+.mvn_manual/
+
+# IDE specific
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Application log dumps
+app_logs.txt
+app_logs_latest.txt
+
+# Test/dummy assets — not needed in repo
+dummy_cv.pdf

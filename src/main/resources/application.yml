@@ -1,0 +1,94 @@
+spring:
+  application:
+    name: hireops-engine
+    
+  docker:
+    compose:
+      enabled: true
+      file: docker-compose.yml
+      
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:hireops_db}
+    username: ${POSTGRES_USER:hireops_user}
+    password: ${POSTGRES_PASSWORD:hireops_secure_pass}
+    
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: llama3
+          temperature: 0.7
+      embedding:
+        options:
+          model: nomic-embed-text
+          
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 768
+        initialize-schema: true
+
+  mail:
+    host: ${MAIL_HOST:smtp.example.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  batch:
+    jdbc:
+      initialize-schema: always
+
+server:
+  port: 8081
+
+app:
+  settings:
+    pdf-storage-path: ${PDF_STORAGE_PATH:/app/data/pdfs}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  metrics:
+    tags:
+      application: hireops-engine
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      ollamaCB:
+        slidingWindowSize: 10
+        failureRateThreshold: 80
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 2
+        slowCallDurationThreshold: 180s
+        slowCallRateThreshold: 100
+  retry:
+    instances:
+      ollamaRetry:
+        maxAttempts: 2
+        waitDuration: 5s
+        retryExceptions:
+          - java.io.IOException
+          - org.springframework.web.client.ResourceAccessException
+      bundesagenturRetry:
+        maxAttempts: 3
+        waitDuration: 1s

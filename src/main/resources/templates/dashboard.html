@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>HireOps Engine - Dashboard</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .bg-mesh {
+            background-image: radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 0.2) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 0.2) 0, transparent 50%);
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .glass-column {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 1rem;
+        }
+
+        .job-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .job-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            background: rgba(51, 65, 85, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .card-fetched {
+            border-left: 3px solid #3b82f6;
+        }
+
+        .card-fetched:hover {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .card-scored {
+            border-left: 3px solid #f59e0b;
+        }
+
+        .card-scored:hover {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+
+        .card-approved {
+            border-left: 3px solid #10b981;
+        }
+
+        .card-approved:hover {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .card-applied {
+            border-left: 3px solid #64748b;
+            opacity: 0.7;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(71, 85, 105, 0.8);
+            border-radius: 4px;
+        }
+
+        /* Stats bar */
+        .stat-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 0.75rem;
+            padding: 1rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+        }
+
+        /* Score badge */
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .score-high {
+            background: rgba(16, 185, 129, 0.2);
+            border: 2px solid #10b981;
+            color: #34d399;
+        }
+
+        .score-med {
+            background: rgba(245, 158, 11, 0.2);
+            border: 2px solid #f59e0b;
+            color: #fbbf24;
+        }
+
+        .score-low {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #ef4444;
+            color: #f87171;
+        }
+
+        /* Score filter */
+        .filter-bar {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 0.6rem;
+            padding: 0.6rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: #334155;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+        }
+
+        /* Notes textarea */
+        .notes-area {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 0.4rem;
+            color: #cbd5e1;
+            font-size: 0.75rem;
+            padding: 0.4rem 0.5rem;
+            resize: vertical;
+            min-height: 50px;
+        }
+
+        .notes-area:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        .notes-saved {
+            color: #34d399;
+            font-size: 0.65rem;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .notes-saved.show {
+            opacity: 1;
+        }
+
+        /* Action buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 0.45rem;
+            padding: 0.4rem 0.85rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: 0.45rem;
+            padding: 0.4rem 0.85rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .btn-success:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.45rem;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #f1f5f9;
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 0.45rem;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-link {
+            background: rgba(99, 102, 241, 0.12);
+            color: #818cf8;
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 0.45rem;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            text-decoration: none;
+        }
+
+        .btn-link:hover {
+            background: rgba(99, 102, 241, 0.25);
+            color: #a5b4fc;
+        }
+
+        /* Modal */
+        .modal-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-bg.open {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            width: 90vw;
+            max-width: 840px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 0;
+        }
+
+        .modal-body iframe {
+            width: 100%;
+            height: 65vh;
+            border: none;
+            border-radius: 0 0 1rem 1rem;
+        }
+
+        .modal-body .cover-text {
+            padding: 1.5rem;
+            font-size: 0.875rem;
+            line-height: 1.7;
+            color: #cbd5e1;
+            white-space: pre-wrap;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        /* Nav */
+        .nav-link {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 0.4rem 0.75rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .nav-link:hover {
+            color: #f1f5f9;
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .nav-link.active {
+            color: #a5b4fc;
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        /* Email input */
+        .email-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 0.4rem;
+            color: #e2e8f0;
+            font-size: 0.75rem;
+            padding: 0.35rem 0.6rem;
+            width: 100%;
+        }
+
+        .email-input:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        /* Flash messages */
+        .flash-success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 0.6rem;
+            padding: 0.75rem 1.25rem;
+            color: #34d399;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .flash-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 0.6rem;
+            padding: 0.75rem 1.25rem;
+            color: #f87171;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-mesh"></div>
+
+    <!-- NAV -->
+    <nav
+        style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 40;">
+        <div
+            style="max-width: 1800px; margin: 0 auto; padding: 0.875rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div
+                    style="width: 2rem; height: 2rem; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;">
+                    H</div>
+                <span style="font-weight: 700; font-size: 1.1rem;">HireOps <span
+                        style="color: #6366f1;">Engine</span></span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="/dashboard" class="nav-link active">Pipeline</a>
+                <a href="/settings" class="nav-link">Settings</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main style="max-width: 1800px; margin: 0 auto; padding: 1.5rem;">
+
+        <!-- Flash Messages -->
+        <div th:if="${success}" class="flash-success" style="margin-bottom: 1rem;">
+            <span></span> <span th:text="${success}"></span>
+        </div>
+        <div th:if="${error}" class="flash-error" style="margin-bottom: 1rem;">
+            <span></span> <span th:text="${error}"></span>
+        </div>
+
+        <!-- JOB CONTROLS -->
+        <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 0.75rem; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <h3 style="font-weight: 600; font-size: 0.95rem; color: #f8fafc;">Pipeline Controls</h3>
+                
+                <!-- AI Status Indicator -->
+                <div id="aiStatusBadge" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.65rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 9999px; font-size: 0.72rem;">
+                    <span id="aiStatusDot" style="width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #94a3b8; box-shadow: 0 0 5px rgba(255,255,255,0.1);"></span>
+                    <span id="aiStatusText" style="color: #94a3b8; font-weight: 500;">AI: Checking...</span>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 0.8rem; color: #94a3b8;">Amount to Fetch:</span>
+                    <input type="number" id="fetchLimit" value="10" min="1" max="50" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 0.4rem; color: #e2e8f0; font-size: 0.85rem; padding: 0.35rem 0.6rem; width: 4.5rem;">
+                    <button type="button" class="btn-primary" onclick="fetchNewJobs()">
+                        <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Fetch New Jobs
+                    </button>
+                    <span id="fetchStatus" style="font-size: 0.75rem; color: #34d399; margin-left: 0.5rem; opacity: 0; transition: opacity 0.3s;">Fetching...</span>
+                </div>
+            </div>
+            <button type="button" class="btn-danger" onclick="clearAllJobs()">
+                <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Clear Pipeline
+            </button>
+        </div>
+
+        <!-- STATS BAR -->
+        <div id="statsBar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="stat-card">
+                <div class="stat-value" id="statInbox" style="color: #6366f1;" th:text="${totalFetchedCount}">0</div>
+                <div class="stat-label">Jobs in Inbox</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statPipeline" style="color: #f59e0b;" th:text="${statsTotalInPipeline}">0</div>
+                <div class="stat-label">Active in Pipeline</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statDispatched" style="color: #10b981;" th:text="${statsScoredThisWeek}">0</div>
+                <div class="stat-label">Scored This Week</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #34d399;"><span id="statAvgScore" th:text="${statsAvgScore}">0</span>%</div>
+                <div class="stat-label">Avg Match Score</div>
+            </div>
+        </div>
+
+        <!-- KANBAN BOARD -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; align-items: start;">
+
+            <!-- ===== COLUMN 1: PIPELINE INBOX ===== -->
+            <div class="glass-column" style="padding: 1.25rem;">
+                <div
+                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 0.6rem; height: 0.6rem; border-radius: 50%; background: #3b82f6;"></div>
+                        <h2 style="font-weight: 600; font-size: 0.95rem;">Pipeline Inbox</h2>
+                    </div>
+                    <span
+                        style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-radius: 9999px; padding: 0.15rem 0.6rem; font-size: 0.7rem; font-weight: 600;"
+                        th:text="${fetchedJobs.size()}">0</span>
+                </div>
+
+                <!-- Score filter + Score All button -->
+                <div class="filter-bar" style="gap: 0.5rem;">
+                    <span style="font-size: 0.7rem; color: #94a3b8; white-space: nowrap;">Min Score</span>
+                    <input type="range" id="scoreFilter" min="0" max="100" value="0" style="flex: 1;"
+                        oninput="filterByScore(this.value)">
+                    <span id="scoreFilterLabel"
+                        style="font-size: 0.7rem; color: #818cf8; font-weight: 600; min-width: 2.5rem;">Any</span>
+                    <button id="scoreAllBtn" type="button" onclick="scoreAllJobs()"
+                        title="Auto-score all unscored inbox jobs"
+                        style="background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border: none; border-radius: 0.4rem; padding: 0.3rem 0.65rem; font-size: 0.7rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; transition: all 0.2s; flex-shrink: 0;">
+                        <svg style="width:0.8rem; height:0.8rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Score All
+                    </button>
+                </div>
+
+                <p th:if="${totalFetchedCount > fetchedJobs.size()}"
+                    style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.75rem; text-align: center;">
+                    Showing first <span th:text="${fetchedJobs.size()}">50</span> of <span
+                        th:text="${totalFetchedCount}"></span> jobs
+                </p>
+
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 75vh; overflow-y: auto;"
+                    id="fetchedList">
+                    <div th:each="job : ${fetchedJobs}" class="job-card card-fetched"
+                        th:attr="data-score=${job.matchScore}" style="border-radius: 0.75rem; padding: 1rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <div style="flex: 1; min-width: 0;">
+                                <p style="font-weight: 600; font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                    th:text="${job.title}">Title</p>
+                                <p style="color: #94a3b8; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                    th:text="${job.company}">Company</p>
+                            </div>
+                            <div th:if="${job.matchScore != null}"
+                                th:class="${job.matchScore >= 75 ? 'score-badge score-high' : (job.matchScore >= 50 ? 'score-badge score-med' : 'score-badge score-low')}"
+                                th:text="${job.matchScore + '%'}">0%</div>
+                        </div>
+
+                        <!-- CRM Notes -->
+                        <textarea class="notes-area" placeholder="Add a note (auto-saved)..." th:text="${job.notes}"
+                            th:attr="data-job-id=${job.id}" oninput="scheduleNoteSave(this)"></textarea>
+                        <div class="notes-saved" th:attr="id=${'note-saved-' + job.id}">✓ saved</div>
+
+                        <!-- Actions row -->
+                        <div
+                            style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; align-items: center;">
+                            <!-- Open on Arbeitsagentur -->
+                            <a th:if="${job.portalUrl != null}" th:href="${job.portalUrl}" target="_blank"
+                                rel="noopener" class="btn-link">
+                                View Posting
+                            </a>
+                            <!-- AI Match -->
+                            <div style="display:inline; position: relative;">
+                                <button type="button" class="btn-primary ai-match-btn" th:data-id="${job.id}" onclick="startAiMatch(this, this.getAttribute('data-id'))">AI Match</button>
+                                <span class="ai-match-status" style="display:none; font-size:0.75rem; color:#818cf8; margin-left:0.5rem;">
+                                    <svg class="animate-spin" style="width:1rem; height:1rem; display:inline; margin-right:0.2rem;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    Scoring...
+                                </span>
+                            </div>
+                            <!-- Reject / remove -->
+                            <button type="button" class="btn-ghost"
+                                style="color: #ef4444; font-size: 0.75rem; padding: 0.2rem 0.5rem;"
+                                th:data-id="${job.id}" onclick="ignoreJob(this, this.getAttribute('data-id'))">✕ Ignore</button>
+                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(fetchedJobs)}"
+                        style="text-align: center; color: #475569; padding: 2rem 1rem; font-size: 0.875rem;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;"></div>
+                        No jobs fetched yet. Restart the app to trigger ingestion.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== COLUMN 2: AI REVIEW ===== -->
+            <div class="glass-column" style="padding: 1.25rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 0.6rem; height: 0.6rem; border-radius: 50%; background: #f59e0b;"></div>
+                        <h2 style="font-weight: 600; font-size: 0.95rem;">AI Review</h2>
+                    </div>
+                    <span
+                        style="background: rgba(245, 158, 11, 0.2); color: #fcd34d; border-radius: 9999px; padding: 0.15rem 0.6rem; font-size: 0.7rem; font-weight: 600;"
+                        th:text="${scoredJobs.size()}">0</span>
+                </div>
+
+
+
+                <div id="scoredList" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 75vh; overflow-y: auto;">
+                    <div th:each="job : ${scoredJobs}" class="job-card card-scored"
+                         th:attr="data-score=${job.matchScore}"
+                         style="border-radius: 0.75rem; padding: 1rem;">
+
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.6rem;">
+                            <div style="flex: 1; min-width: 0;">
+                                <p style="font-weight: 600; font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.2rem;"
+                                    th:text="${job.title}">Title</p>
+                                <p style="color: #94a3b8; font-size: 0.75rem;" th:text="${job.company}">Company</p>
+                            </div>
+                            <div th:class="${job.matchScore >= 75 ? 'score-badge score-high' : (job.matchScore >= 50 ? 'score-badge score-med' : 'score-badge score-low')}"
+                                th:text="${job.matchScore + '%'}">0%</div>
+                        </div>
+
+                        <!-- Score progress bar -->
+                        <div
+                            style="background: rgba(255,255,255,0.06); border-radius: 9999px; height: 4px; margin-bottom: 0.75rem; overflow: hidden;">
+                            <div
+                                th:style="'width: ' + ${job.matchScore} + '%; height: 100%; background: linear-gradient(90deg, #f59e0b, #10b981); border-radius: 9999px;'">
+                            </div>
+                        </div>
+
+                        <!-- CRM Notes -->
+                        <textarea class="notes-area" placeholder="Add a note (auto-saved)..." th:text="${job.notes}"
+                            th:attr="data-job-id=${job.id}" oninput="scheduleNoteSave(this)"></textarea>
+                        <div class="notes-saved" th:attr="id=${'note-saved-' + job.id}">✓ saved</div>
+
+                        <div
+                            style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; align-items: center;">
+                            <!-- Open job page -->
+                            <a th:if="${job.portalUrl != null}" th:href="${job.portalUrl}" target="_blank"
+                                rel="noopener" class="btn-link">
+                                View Posting
+                            </a>
+                            <!-- Preview cover letter -->
+                            <button type="button" class="btn-ghost" th:data-job-id="${job.id}"
+                                th:data-job-title="${job.title}"
+                                th:data-job-analysis="${job.aiAnalysis}"
+                                onclick="openCoverLetterModal(this.getAttribute('data-job-id'), this.getAttribute('data-job-title'), this)">
+                                Preview Letter
+                            </button>
+                            <!-- Approve -->
+                            <form th:action="@{/api/jobs/{id}/approve(id=${job.id})}" method="post"
+                                style="display:inline;">
+                                <button type="submit" class="btn-success">Approve Draft</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(scoredJobs)}"
+                        style="text-align: center; color: #475569; padding: 2rem 1rem; font-size: 0.875rem;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;"></div>
+                        Run "AI Match" on inbox jobs to score them.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== COLUMN 3: READY TO DISPATCH ===== -->
+            <div class="glass-column" style="padding: 1.25rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 0.6rem; height: 0.6rem; border-radius: 50%; background: #10b981;"></div>
+                        <h2 style="font-weight: 600; font-size: 0.95rem;">Ready to Dispatch</h2>
+                    </div>
+                    <span
+                        style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-radius: 9999px; padding: 0.15rem 0.6rem; font-size: 0.7rem; font-weight: 600;"
+                        th:text="${approvedJobs.size()}">0</span>
+                </div>
+
+                <div id="approvedList" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 75vh; overflow-y: auto;">
+                    <div th:each="job : ${approvedJobs}" class="job-card card-approved"
+                        style="border-radius: 0.75rem; padding: 1rem;">
+
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.6rem;">
+                            <div style="flex: 1; min-width: 0;">
+                                <p style="font-weight: 600; font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.2rem;"
+                                    th:text="${job.title}">Title</p>
+                                <p style="color: #94a3b8; font-size: 0.75rem;" th:text="${job.company}">Company</p>
+                            </div>
+                            <div th:class="${job.matchScore >= 75 ? 'score-badge score-high' : (job.matchScore >= 50 ? 'score-badge score-med' : 'score-badge score-low')}"
+                                th:text="${job.matchScore + '%'}">0%</div>
+                        </div>
+
+                        <!-- CRM Notes -->
+                        <textarea class="notes-area" placeholder="Add a note (auto-saved)..." th:text="${job.notes}"
+                            th:attr="data-job-id=${job.id}" oninput="scheduleNoteSave(this)"></textarea>
+                        <div class="notes-saved" th:attr="id=${'note-saved-' + job.id}">✓ saved</div>
+
+                        <div style="margin-top: 0.75rem;">
+                            <p
+                                style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem;">
+                                Sending To — <span style="color: #f59e0b; font-size: 0.65rem;">Find real email on job
+                                    page, then paste below</span>
+                            </p>
+                            <!-- Editable recipient email -->
+                            <form th:action="@{/api/jobs/{id}/dispatch(id=${job.id})}" method="post">
+                                <input type="email" name="recipientEmail" class="email-input"
+                                    style="margin-bottom: 0.5rem;"
+                                    th:value="${job.employerEmail != null and !job.employerEmail.isEmpty() ? job.employerEmail : ''}"
+                                    placeholder="paste-real-email@company.de" required />
+                                <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                                    <a th:if="${job.portalUrl != null}" th:href="${job.portalUrl}" target="_blank"
+                                        rel="noopener" class="btn-link">
+                                        Get Email
+                                    </a>
+                                    <button type="button" class="btn-ghost" th:data-job-id="${job.id}"
+                                        th:data-job-title="${job.title}"
+                                        th:data-job-analysis="${job.aiAnalysis}"
+                                        onclick="openCoverLetterModal(this.getAttribute('data-job-id'), this.getAttribute('data-job-title'), this)">
+                                        Preview
+                                    </button>
+                                    <button type="submit" class="btn-success">Dispatch</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(approvedJobs)}"
+                        style="text-align: center; color: #475569; padding: 2rem 1rem; font-size: 0.875rem;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;"></div>
+                        Approve scored jobs to prepare for dispatch.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== COLUMN 4: DISPATCHED ===== -->
+            <div class="glass-column" style="padding: 1.25rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 0.6rem; height: 0.6rem; border-radius: 50%; background: #64748b;"></div>
+                        <h2 style="font-weight: 600; font-size: 0.95rem;">Dispatched</h2>
+                    </div>
+                    <span
+                        style="background: rgba(100, 116, 139, 0.2); color: #94a3b8; border-radius: 9999px; padding: 0.15rem 0.6rem; font-size: 0.7rem; font-weight: 600;"
+                        th:text="${appliedJobs.size()}">0</span>
+                </div>
+
+                <div id="appliedList" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 75vh; overflow-y: auto;">
+                    <div th:each="job : ${appliedJobs}" class="job-card card-applied"
+                        style="border-radius: 0.75rem; padding: 1rem;">
+
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                            <div style="flex: 1; min-width: 0;">
+                                <p style="font-weight: 600; font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.2rem;"
+                                    th:text="${job.title}">Title</p>
+                                <p style="color: #64748b; font-size: 0.75rem;" th:text="${job.company}">Company</p>
+                            </div>
+                            <div th:if="${job.matchScore != null}"
+                                th:class="${job.matchScore >= 75 ? 'score-badge score-high' : (job.matchScore >= 50 ? 'score-badge score-med' : 'score-badge score-low')}"
+                                th:text="${job.matchScore + '%'}">0%</div>
+                        </div>
+                        <p style="font-size: 0.7rem; color: #475569; margin-top: 0.4rem;">Application sent</p>
+                        <div th:if="${job.notes != null and !job.notes.isEmpty()}"
+                            style="font-size: 0.72rem; color: #64748b; background: rgba(255,255,255,0.03); border-radius: 0.35rem; padding: 0.4rem 0.5rem; margin-top: 0.4rem;"
+                            th:text="${job.notes}"></div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(appliedJobs)}"
+                        style="text-align: center; color: #475569; padding: 2rem 1rem; font-size: 0.875rem;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;"></div>
+                        No applications sent yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== COVER LETTER PREVIEW MODAL ===== -->
+    <div id="coverLetterModal" class="modal-bg" onclick="if(event.target===this) closeCoverLetterModal()">
+        <div class="modal-box">
+            <div class="modal-header" style="flex-direction: column; align-items: flex-start; gap: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                    <div>
+                        <p style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em;">
+                            Details & Response</p>
+                        <h3 id="modalTitle" style="font-weight: 600; font-size: 1rem; color: #f1f5f9; margin-top: 0.1rem;">
+                            Job Title</h3>
+                    </div>
+                    <button class="modal-close" onclick="closeCoverLetterModal()">✕</button>
+                </div>
+                
+                <!-- Modal Tabs -->
+                <div style="display: flex; gap: 0.5rem; width: 100%; font-size: 0.8rem; margin-top: 0.25rem;">
+                    <button id="tabBtnLetter" class="px-3 py-1.5 font-semibold text-white border-b-2 border-indigo-500" onclick="switchModalTab('letter')" style="background:transparent; border-radius:0; border-top:0; border-left:0; border-right:0;">Cover Letter</button>
+                    <button id="tabBtnAnalysis" class="px-3 py-1.5 font-semibold text-gray-400 hover:text-white" onclick="switchModalTab('analysis')" style="background:transparent; border-radius:0; border:none;">AI Match Analysis</button>
+                </div>
+            </div>
+            
+            <div class="modal-body" style="background: #0f172a; flex: 1; overflow: auto; display: flex; flex-direction: column;">
+                <!-- Tab 1: Letter -->
+                <div id="tabContentLetter" style="flex: 1; display: flex;">
+                    <iframe id="coverLetterFrame" src="" title="Cover Letter Preview" style="flex: 1; width: 100%; height: 60vh; border: none;"></iframe>
+                </div>
+                
+                <!-- Tab 2: Analysis -->
+                <div id="tabContentAnalysis" style="display: none; padding: 1.5rem; font-size: 0.875rem; line-height: 1.6; color: #cbd5e1; white-space: pre-wrap; flex: 1; overflow-y: auto;">
+                    <!-- Injected text -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script>
+        const scoringJobs = new Set();
+        // ---- Score Filter ----
+        function filterByScore(val) {
+            const label = document.getElementById('scoreFilterLabel');
+            label.textContent = val == 0 ? 'Any' : val + '%+';
+            document.querySelectorAll('#scoredList .job-card').forEach(card => {
+                const score = parseInt(card.dataset.score || '0', 10);
+                card.style.display = (val == 0 || score >= parseInt(val)) ? '' : 'none';
+            });
+        }
+
+        // ---- Notes Auto-Save ----
+        const noteTimers = {};
+        function scheduleNoteSave(textarea) {
+            const jobId = textarea.dataset.jobId;
+            clearTimeout(noteTimers[jobId]);
+            noteTimers[jobId] = setTimeout(() => saveNote(jobId, textarea.value), 900);
+        }
+        function saveNote(jobId, notes) {
+            fetch(`/api/jobs/${jobId}/notes`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notes })
+            }).then(r => {
+                if (r.ok) {
+                    const el = document.getElementById('note-saved-' + jobId);
+                    if (el) { el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2000); }
+                }
+            }).catch(() => { });
+        }
+
+        // ---- Cover Letter & Analysis Modal ----
+        function openCoverLetterModal(jobId, title, btn) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('coverLetterFrame').src = `/api/documents/cl/${jobId}`;
+            
+            // Set Analysis Text
+            const analysis = btn ? btn.getAttribute('data-job-analysis') : '';
+            document.getElementById('tabContentAnalysis').textContent = analysis || "No AI analysis available for this match.";
+            
+            // Reset position back to Cover Letter Tab
+            if(typeof switchModalTab === 'function') switchModalTab('letter');
+            
+            document.getElementById('coverLetterModal').classList.add('open');
+        }
+
+        function closeCoverLetterModal() {
+            document.getElementById('coverLetterModal').classList.remove('open');
+            document.getElementById('coverLetterFrame').src = '';
+        }
+
+        function switchModalTab(tab) {
+            const btnLetter = document.getElementById('tabBtnLetter');
+            const btnAnalysis = document.getElementById('tabBtnAnalysis');
+            const contentLetter = document.getElementById('tabContentLetter');
+            const contentAnalysis = document.getElementById('tabContentAnalysis');
+
+            if (tab === 'analysis') {
+                btnLetter.className = "px-3 py-1.5 font-semibold text-gray-400 hover:text-white";
+                btnLetter.style.borderBottom = "none";
+                
+                btnAnalysis.className = "px-3 py-1.5 font-semibold text-white border-b-2 border-indigo-500";
+                btnAnalysis.style.borderBottom = "2px solid #6366f1";
+
+                contentLetter.style.display = "none";
+                contentAnalysis.style.display = "block";
+            } else {
+                btnAnalysis.className = "px-3 py-1.5 font-semibold text-gray-400 hover:text-white";
+                btnAnalysis.style.borderBottom = "none";
+
+                btnLetter.className = "px-3 py-1.5 font-semibold text-white border-b-2 border-indigo-500";
+                btnLetter.style.borderBottom = "2px solid #6366f1";
+
+                contentLetter.style.display = "flex";
+                contentAnalysis.style.display = "none";
+            }
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCoverLetterModal(); });
+
+        // ---- Job Controls ----
+        async function ignoreJob(btn, jobId) {
+            if (!confirm('Remove this job from pipeline?')) return;
+            const container = btn.closest('.job-card');
+            
+            // Optimistic UI hide
+            container.style.opacity = '0.5';
+            container.style.pointerEvents = 'none';
+            btn.innerHTML = '...';
+
+            try {
+                const res = await fetch(`/api/v1/jobs/${jobId}/ignore`, { method: 'POST' });
+                if (res.ok) {
+                    container.style.display = 'none';
+                    showToast('Job ignored successfully', 'success');
+                } else {
+                    throw new Error('Failed to ignore');
+                }
+            } catch (e) {
+                container.style.opacity = '1';
+                container.style.pointerEvents = 'auto';
+                btn.innerHTML = '✕ Ignore';
+                showToast('Failed to ignore job', 'error');
+            }
+        }
+
+        async function fetchNewJobs() {
+            const btn = document.querySelector('button[onclick*="fetchNewJobs"]');
+            const limit = document.getElementById('fetchLimit').value || 10;
+            const statusSpan = document.getElementById('fetchStatus');
+            
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.innerHTML = '<svg class="animate-spin" style="width:1rem;height:1rem;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Fetching...';
+
+            statusSpan.style.opacity = '1';
+            statusSpan.textContent = 'Fetching...';
+            statusSpan.style.color = '#94a3b8';
+            
+            try {
+                const response = await fetch('/api/v1/discovery/scan?limit=' + limit, { method: 'POST' });
+                if (response.ok) {
+                    const data = await response.json();
+                    statusSpan.textContent = `Scraped ${data.added} jobs!`;
+                    statusSpan.style.color = '#34d399';
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    statusSpan.textContent = 'Error';
+                    statusSpan.style.color = '#ef4444';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.innerHTML = '<svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Fetch New Jobs';
+                }
+            } catch (e) {
+                statusSpan.textContent = 'Error';
+                statusSpan.style.color = '#ef4444';
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerHTML = '<svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Fetch New Jobs';
+            }
+        }
+
+        let clearConfirmTimeout;
+        async function clearAllJobs() {
+            let btnElem = document.activeElement || document.querySelector('button[onclick*="clearAllJobs"]');
+            if (btnElem && !btnElem.dataset.confirming) {
+                btnElem.dataset.confirming = 'true';
+                btnElem.dataset.originalHtml = btnElem.innerHTML;
+                btnElem.innerHTML = '⚠️ Click again to confirm';
+                btnElem.style.color = '#ef4444';
+                btnElem.style.borderColor = '#ef4444';
+                clearConfirmTimeout = setTimeout(() => {
+                    btnElem.dataset.confirming = '';
+                    btnElem.innerHTML = btnElem.dataset.originalHtml || 'Clear Pipeline';
+                    btnElem.style.color = '';
+                    btnElem.style.borderColor = '';
+                }, 3000);
+                return;
+            }
+            clearTimeout(clearConfirmTimeout);
+            if (btnElem) btnElem.innerHTML = 'Clearing...';
+            try {
+                const response = await fetch('/api/v1/jobs/clear', { method: 'POST' });
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    showToast('Failed to clear jobs. Ensure the backend handles this cleanly.', 'error');
+                }
+            } catch (e) {
+                showToast('Error clearing jobs.', 'error');
+            }
+        }
+        // (Duplicate startAiMatch removed for cleaner JS hoisting)
+
+        // ---- AI Status Polling ----
+        async function pollAiStatus() {
+            const dot = document.getElementById('aiStatusDot');
+            const txt = document.getElementById('aiStatusText');
+            if(!dot || !txt) return;
+            try {
+                const response = await fetch('/api/ai/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'HEALTHY') {
+                        dot.style.background = '#10b981'; // Green
+                        dot.style.boxShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+                        txt.textContent = 'AI: Healthy';
+                        txt.style.color = '#10b981';
+                    } else if (data.status === 'CONFIG_ERROR') {
+                        dot.style.background = '#f59e0b'; // Amber
+                        txt.textContent = 'AI: Config issues';
+                        txt.style.color = '#f59e0b';
+                    } else {
+                        dot.style.background = '#ef4444'; // Red
+                        txt.textContent = 'AI: Offline';
+                        txt.style.color = '#ef4444';
+                    }
+                } else {
+                    dot.style.background = '#ef4444';
+                    txt.textContent = 'AI: Offline';
+                    txt.style.color = '#ef4444';
+                }
+            } catch (e) {
+                dot.style.background = '#ef4444';
+                txt.textContent = 'AI: Connection Error';
+                txt.style.color = '#ef4444';
+            }
+        }
+        // Run once immediately
+        document.addEventListener('DOMContentLoaded', pollAiStatus);
+
+        // =====================================================================
+        // SCORE ALL — Batch trigger AI scoring for all FETCHED inbox jobs
+        // =====================================================================
+        async function scoreAllJobs() {
+            const btn = document.getElementById('scoreAllBtn');
+            if (!btn) return;
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            btn.innerHTML = '<svg class="animate-spin" style="width:0.8rem;height:0.8rem;" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" class="opacity-75"/></svg> Queuing...';
+            try {
+                const res = await fetch('/api/v1/score-all', { method: 'POST' });
+                const data = await res.json();
+                showToast(data.message || 'Scoring started', data.queued > 0 ? 'success' : 'info');
+            } catch (e) {
+                showToast('Score-All failed: ' + e.message, 'error');
+            } finally {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.innerHTML = '<svg style="width:0.8rem;height:0.8rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Score All';
+                }, 3000);
+            }
+        }
+
+        // =====================================================================
+        // TOAST HELPER
+        // =====================================================================
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('globalToast');
+            if (!toast) return;
+            const colors = {
+                success: { bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.4)', text: '#34d399' },
+                error:   { bg: 'rgba(239,68,68,0.15)',  border: 'rgba(239,68,68,0.4)',  text: '#f87171' },
+                info:    { bg: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.4)', text: '#a5b4fc' }
+            };
+            const c = colors[type] || colors.info;
+            toast.style.background = c.bg;
+            toast.style.borderColor = c.border;
+            toast.style.color = c.text;
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+            clearTimeout(toast._t);
+            toast._t = setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(1rem)';
+            }, 4500);
+        }
+
+        // =====================================================================
+        // AI ACTIVITY LOG — SSE EventSource
+        // =====================================================================
+        const MAX_LOG_ENTRIES = 8;
+        let sseConnected = false;
+
+        function connectActivityStream() {
+            if (sseConnected) return;
+            const logList = document.getElementById('activityLogList');
+            const logPanel = document.getElementById('activityLogPanel');
+            if (!logList) return;
+
+            const es = new EventSource('/api/ai/progress/stream');
+            sseConnected = true;
+
+            es.onmessage = function(e) {
+                try {
+                    const evt = JSON.parse(e.data);
+                    
+                    // Release the UI lock and force refresh if AI finishes
+                    if (evt.type === 'success' || evt.type === 'error') {
+                        scoringJobs.clear();
+                        setTimeout(refreshDashboardDOM, 500);
+                    }
+
+                    const colors = {
+                        start:   '#818cf8',
+                        success: '#34d399',
+                        error:   '#f87171',
+                        info:    '#94a3b8'
+                    };
+                    const icons = { start: '⏳', success: '✓', error: '✗', info: 'ℹ' };
+                    const color = colors[evt.type] || '#94a3b8';
+                    const icon  = icons[evt.type]  || 'ℹ';
+
+                    const entry = document.createElement('div');
+                    entry.style.cssText = `display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.04);`;
+                    entry.innerHTML = `
+                        <span style="color:${color};font-size:0.8rem;flex-shrink:0;">${icon}</span>
+                        <span style="color:#94a3b8;font-size:0.68rem;flex-shrink:0;">${evt.time}</span>
+                        <span style="color:${color};font-size:0.72rem;line-height:1.4;">${evt.message}</span>
+                    `;
+                    logList.insertBefore(entry, logList.firstChild);
+                    while (logList.children.length > MAX_LOG_ENTRIES) {
+                        logList.removeChild(logList.lastChild);
+                    }
+                    // Show panel on first event
+                    if (logPanel) logPanel.style.display = 'flex';
+                } catch(err) { /* ignore parse errors */ }
+            };
+
+            es.onerror = function() {
+                sseConnected = false;
+                setTimeout(connectActivityStream, 5000); // reconnect
+            };
+        }
+
+        // =====================================================================
+        // LIVE DASHBOARD SYNC — Fetches /dashboard and hot-swaps lists + stats
+        // =====================================================================
+        let isRefreshing = false;
+        async function refreshDashboardDOM() {
+            if (isRefreshing) return;
+            isRefreshing = true;
+            try {
+                const res = await fetch('/dashboard');
+                if (!res.ok) throw new Error('Fetch failed');
+                const text = await res.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+
+                // 1. Sync Stats Bar
+                const newStats = doc.getElementById('statsBar');
+                const oldStats = document.getElementById('statsBar');
+                if (newStats && oldStats) oldStats.innerHTML = newStats.innerHTML;
+
+                // 2. Sync Kanban Column Lists
+                const lists = ['fetchedList', 'scoredList', 'approvedList', 'appliedList'];
+                lists.forEach(id => {
+                    const newList = doc.getElementById(id);
+                    const oldList = document.getElementById(id);
+                    if (newList && oldList) {
+                        // Preserve spinner state for scoring jobs to prevent UI flickering
+                        if (id === 'fetchedList') {
+                            newList.querySelectorAll('.job-card').forEach(card => {
+                                const btn = card.querySelector('.ai-match-btn');
+                                if (btn && scoringJobs.has(btn.dataset.id)) {
+                                    btn.style.display = 'none';
+                                    const statusSpan = card.querySelector('.ai-match-status');
+                                    if (statusSpan) {
+                                        statusSpan.style.display = 'inline-block';
+                                        statusSpan.innerHTML = '<span style="color:#818cf8;">⏳ Scoring (may take time on first run)...</span>';
+                                    }
+                                }
+                            });
+                        }
+
+                        // Don't overwrite inner list if user is currently typing in a note area
+                        const activeEl = document.activeElement;
+                        if (activeEl && activeEl.tagName === 'TEXTAREA' && oldList.contains(activeEl)) {
+                            // Skip replacing list content while typing node to avoid cursor jump
+                            return; 
+                        }
+                        oldList.innerHTML = newList.innerHTML;
+                    }
+                });
+
+                // 3. Re-apply any client-side filters (like the score slider)
+                const scoreVal = document.getElementById('scoreFilter')?.value || 0;
+                if (scoreVal > 0 && typeof filterByScore === 'function') {
+                    filterByScore(scoreVal);
+                }
+
+            } catch(e) { /* silent background fail */ }
+            finally { isRefreshing = false; }
+        }
+
+        // =====================================================================
+        // LIVE AI MATCH — no page reload, let polling handle the update
+        // =====================================================================
+        async function startAiMatch(btnElem, jobId) {
+            const container = btnElem.parentElement;
+            const statusSpan = container.querySelector('.ai-match-status');
+            btnElem.style.display = 'none';
+            statusSpan.style.display = 'inline-block';
+            scoringJobs.add(jobId);
+
+            try {
+                const response = await fetch(`/api/jobs/${jobId}/score`, { method: 'POST' });
+                if (response.ok) {
+                    statusSpan.innerHTML = '<span style="color:#818cf8;">⏳ Scoring (may take time on first run)...</span>';
+                } else {
+                    scoringJobs.delete(jobId);
+                    const errInfo = await response.json().catch(() => ({}));
+                    statusSpan.innerHTML = `<span style="color:#ef4444;">✕ ${errInfo.message || 'Error'}</span>`;
+                    setTimeout(() => {
+                        statusSpan.style.display = 'none';
+                        btnElem.style.display = 'inline-block';
+                    }, 5000);
+                }
+            } catch (e) {
+                scoringJobs.delete(jobId);
+                statusSpan.innerHTML = '<span style="color:#ef4444;">✕ Network Error</span>';
+                setTimeout(() => {
+                    statusSpan.style.display = 'none';
+                    btnElem.style.display = 'inline-block';
+                }, 4000);
+            }
+        }
+
+        // =====================================================================
+        // BOOTSTRAP on page load
+        // =====================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            pollAiStatus();
+            connectActivityStream();
+            // Initial poll
+            refreshDashboardDOM();
+            // Intervals
+            setInterval(refreshDashboardDOM, 5000);
+            setInterval(pollAiStatus, 30000);
+        });
+
+
+    </script>
+
+    <!-- ===== FLOATING AI ACTIVITY LOG ===== -->
+    <div id="activityLogPanel"
+        style="display:none; position:fixed; bottom:1.25rem; right:1.25rem; z-index:60;
+               width:22rem; flex-direction:column;
+               background:rgba(15,23,42,0.92); backdrop-filter:blur(16px);
+               border:1px solid rgba(99,102,241,0.25); border-radius:0.75rem;
+               box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.9rem;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex;align-items:center;gap:0.4rem;">
+                <span style="width:0.45rem;height:0.45rem;border-radius:50%;background:#818cf8;box-shadow:0 0 6px rgba(129,140,248,0.6);animation:pulse 2s infinite;"></span>
+                <span style="font-size:0.72rem;font-weight:600;color:#a5b4fc;letter-spacing:0.05em;">AI ACTIVITY LOG</span>
+            </div>
+            <button onclick="document.getElementById('activityLogPanel').style.display='none';"
+                style="background:none;border:none;color:#475569;cursor:pointer;font-size:0.85rem;padding:0.1rem 0.25rem;line-height:1;">✕</button>
+        </div>
+        <div id="activityLogList" style="padding:0.5rem 0.9rem;display:flex;flex-direction:column;max-height:14rem;overflow-y:auto;"></div>
+    </div>
+
+    <!-- GLOBAL TOAST -->
+    <div id="globalToast"
+        style="position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%) translateY(1rem);
+               padding:0.6rem 1.25rem;border-radius:0.5rem;border:1px solid transparent;
+               font-size:0.8rem;font-weight:500;opacity:0;transition:all 0.35s ease;z-index:70;
+               pointer-events:none;text-align:center;max-width:26rem;"></div>
+
+    <!-- Pulse animation -->
+    <style>
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+    </style>
+
+</body>
+
+</html>

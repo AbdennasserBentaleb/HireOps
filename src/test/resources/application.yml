@@ -1,0 +1,10 @@
+spring:
+  ai:
+    vectorstore:
+      pgvector:
+        initialize-schema: false
+  mail:
+    host: localhost
+    port: 587
+    username: test
+    password: test

@@ -35,5 +35,5 @@ USER 65532:65532
 COPY --from=builder /app/target/hireops-engine-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose port and start
-EXPOSE 8080
+EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

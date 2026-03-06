@@ -35,5 +35,5 @@ Thumbs.db
 app_logs.txt
 app_logs_latest.txt
 
-# Test/dummy assets — not needed in repo
-dummy_cv.pdf
+# Generated PDF files — runtime artefacts, not source
+*.pdf

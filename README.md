@@ -4,6 +4,8 @@ HireOps is an automated job application pipeline targeting the German tech marke
 
 ![Tech Stack](https://img.shields.io/badge/Spring%20Boot-3.4.3-brightgreen) ![AI](https://img.shields.io/badge/Ollama-llama3-blue) ![DB](https://img.shields.io/badge/PostgreSQL-pgvector-blue) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
+**Tech Stack**: Java 25, Spring Boot 3.4, Spring AI, PostgreSQL, pgvector, Ollama, Maven, Docker/Kubernetes.
+
 ## Features
 
 | Feature | Description |
@@ -28,14 +30,22 @@ HireOps is an automated job application pipeline targeting the German tech marke
 
 ### 1-Alt. Manual Command
 ```bash
-docker compose up -d
+docker compose build && docker compose up -d
 ```
 
-### 2. Run the Application
+### 2. Run the Application Natively
 ```bash
-mvn spring-boot:run
+# Linux / Mac
+./mvnw spring-boot:run
+# Windows PowerShell
+.\mvnw.cmd spring-boot:run
 ```
 The dashboard is accessible at <http://localhost:8081>
+
+## API Documentation
+
+Interactive Swagger/OpenAPI documentation is auto-generated and immediately available without configuration. Once the application is running, you can access the interactive Swagger UI and API specs at:
+* **[http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)**
 
 ### Graceful Degradation (Reviewer Mode)
 If you do not wish to install Ollama or pull LLaMA-3 locally, you can still test the pipeline. The system utilizes Resilience4J Circuit Breakers. If the LLM is unreachable, the system gracefully degrades—skipping AI processing but allowing manual status transitions and fallback PDF generation so the core flow remains testable in under 5 minutes without downloading heavy ML models.
@@ -47,7 +57,7 @@ If you do not wish to install Ollama or pull LLaMA-3 locally, you can still test
 * **Challenge: Avoiding Queue Race Conditions:** AI matchmaking is routed via a dedicated DB-backed queue scheduler (`JobQueueScheduler`). Scaling this component originally introduced race conditions where multiple polling worker threads could pick up the same job. *Solution:* We implemented pessimistic native `FOR UPDATE SKIP LOCKED` logic within PostgreSQL to guarantee zero-loss, thread-safe message consumption without introducing heavy external brokers like Kafka.
 * **Spring Batch for API Polling:** Spring Batch enables reliable API ingestion with chunk-oriented processing. *Challenge:* Handling pagination rate-limits effectively from external APIs required careful tuning of reader/writer intervals, which is managed via retry and rate-limiting configurations.
 
-## Architecture Diagram
+## High-Level Architecture
 
 ```text
 +---------------------------------------------------------+

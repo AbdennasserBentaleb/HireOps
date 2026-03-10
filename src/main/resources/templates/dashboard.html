@@ -46,6 +46,34 @@
             border-color: rgba(255, 255, 255, 0.1);
         }
 
+        /* Clickable job title */
+        .job-title-link {
+            font-weight: 600;
+            font-size: 0.85rem;
+            line-height: 1.3;
+            margin-bottom: 0.2rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #f1f5f9;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            transition: color 0.15s;
+        }
+        .job-title-link:hover {
+            color: #a5b4fc;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .job-title-link.no-url {
+            cursor: default;
+        }
+        .job-title-link.no-url:hover {
+            color: #f1f5f9;
+            text-decoration: none;
+        }
+
         .card-fetched {
             border-left: 3px solid #3b82f6;
         }
@@ -494,7 +522,7 @@
                     <span id="fetchStatus" style="font-size: 0.75rem; color: #34d399; margin-left: 0.5rem; opacity: 0; transition: opacity 0.3s;">Fetching...</span>
                 </div>
             </div>
-            <button type="button" class="btn-danger" onclick="clearAllJobs()">
+            <button type="button" class="btn-danger" onclick="clearAllJobs(this)">
                 <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 Clear Pipeline
             </button>
@@ -564,8 +592,12 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
                             <div style="flex: 1; min-width: 0;">
-                                <p style="font-weight: 600; font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                    th:text="${job.title}">Title</p>
+                                <!-- Clickable title —> opens job URL in new tab -->
+                                <a th:if="${job.portalUrl != null}" th:href="${job.portalUrl}"
+                                    target="_blank" rel="noopener"
+                                    class="job-title-link" th:text="${job.title}">Title</a>
+                                <span th:if="${job.portalUrl == null}"
+                                    class="job-title-link no-url" th:text="${job.title}">Title</span>
                                 <p style="color: #94a3b8; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                     th:text="${job.company}">Company</p>
                             </div>
@@ -582,11 +614,6 @@
                         <!-- Actions row -->
                         <div
                             style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; align-items: center;">
-                            <!-- Open on Arbeitsagentur -->
-                            <a th:if="${job.portalUrl != null}" th:href="${job.portalUrl}" target="_blank"
-                                rel="noopener" class="btn-link">
-                                View Posting
-                            </a>
                             <!-- AI Match -->
                             <div style="display:inline; position: relative;">
                                 <button type="button" class="btn-primary ai-match-btn" th:data-id="${job.id}" onclick="startAiMatch(this, this.getAttribute('data-id'))">AI Match</button>
@@ -595,7 +622,7 @@
                                     Scoring...
                                 </span>
                             </div>
-                            <!-- Reject / remove -->
+                            <!-- Ignore — no confirmation, instant optimistic remove -->
                             <button type="button" class="btn-ghost"
                                 style="color: #ef4444; font-size: 0.75rem; padding: 0.2rem 0.5rem;"
                                 th:data-id="${job.id}" onclick="ignoreJob(this, this.getAttribute('data-id'))">✕ Ignore</button>
@@ -632,8 +659,12 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.6rem;">
                             <div style="flex: 1; min-width: 0;">
-                                <p style="font-weight: 600; font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.2rem;"
-                                    th:text="${job.title}">Title</p>
+                                <!-- Clickable title -->
+                                <a th:if="${job.portalUrl != null}" th:href="${job.portalUrl}"
+                                    target="_blank" rel="noopener"
+                                    class="job-title-link" th:text="${job.title}">Title</a>
+                                <span th:if="${job.portalUrl == null}"
+                                    class="job-title-link no-url" th:text="${job.title}">Title</span>
                                 <p style="color: #94a3b8; font-size: 0.75rem;" th:text="${job.company}">Company</p>
                             </div>
                             <div th:class="${job.matchScore >= 75 ? 'score-badge score-high' : (job.matchScore >= 50 ? 'score-badge score-med' : 'score-badge score-low')}"
@@ -702,8 +733,12 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.6rem;">
                             <div style="flex: 1; min-width: 0;">
-                                <p style="font-weight: 600; font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.2rem;"
-                                    th:text="${job.title}">Title</p>
+                                <!-- Clickable title -->
+                                <a th:if="${job.portalUrl != null}" th:href="${job.portalUrl}"
+                                    target="_blank" rel="noopener"
+                                    class="job-title-link" th:text="${job.title}">Title</a>
+                                <span th:if="${job.portalUrl == null}"
+                                    class="job-title-link no-url" th:text="${job.title}">Title</span>
                                 <p style="color: #94a3b8; font-size: 0.75rem;" th:text="${job.company}">Company</p>
                             </div>
                             <div th:class="${job.matchScore >= 75 ? 'score-badge score-high' : (job.matchScore >= 50 ? 'score-badge score-med' : 'score-badge score-low')}"
@@ -771,8 +806,12 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
                             <div style="flex: 1; min-width: 0;">
-                                <p style="font-weight: 600; font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.2rem;"
-                                    th:text="${job.title}">Title</p>
+                                <!-- Clickable title -->
+                                <a th:if="${job.portalUrl != null}" th:href="${job.portalUrl}"
+                                    target="_blank" rel="noopener"
+                                    class="job-title-link" style="color: #94a3b8;" th:text="${job.title}">Title</a>
+                                <span th:if="${job.portalUrl == null}"
+                                    class="job-title-link no-url" style="color: #94a3b8;" th:text="${job.title}">Title</span>
                                 <p style="color: #64748b; font-size: 0.75rem;" th:text="${job.company}">Company</p>
                             </div>
                             <div th:if="${job.matchScore != null}"
@@ -914,26 +953,26 @@
 
         // ---- Job Controls ----
         async function ignoreJob(btn, jobId) {
-            if (!confirm('Remove this job from pipeline?')) return;
+            // No confirmation — instant optimistic removal for fast ignore flows
             const container = btn.closest('.job-card');
-            
-            // Optimistic UI hide
-            container.style.opacity = '0.5';
+            container.style.transition = 'opacity 0.2s, transform 0.2s';
+            container.style.opacity = '0';
+            container.style.transform = 'scale(0.97)';
             container.style.pointerEvents = 'none';
-            btn.innerHTML = '...';
 
             try {
                 const res = await fetch(`/api/v1/jobs/${jobId}/ignore`, { method: 'POST' });
                 if (res.ok) {
-                    container.style.display = 'none';
-                    showToast('Job ignored successfully', 'success');
+                    // Remove from DOM after the fade
+                    setTimeout(() => container.remove(), 200);
                 } else {
                     throw new Error('Failed to ignore');
                 }
             } catch (e) {
+                // Restore card on failure
                 container.style.opacity = '1';
+                container.style.transform = '';
                 container.style.pointerEvents = 'auto';
-                btn.innerHTML = '✕ Ignore';
                 showToast('Failed to ignore job', 'error');
             }
         }
@@ -975,16 +1014,16 @@
         }
 
         let clearConfirmTimeout;
-        async function clearAllJobs() {
-            let btnElem = document.activeElement || document.querySelector('button[onclick*="clearAllJobs"]');
-            if (btnElem && !btnElem.dataset.confirming) {
+        async function clearAllJobs(btnElem) {
+            // Two-click confirmation guard
+            if (!btnElem.dataset.confirming) {
                 btnElem.dataset.confirming = 'true';
                 btnElem.dataset.originalHtml = btnElem.innerHTML;
                 btnElem.innerHTML = '⚠️ Click again to confirm';
                 btnElem.style.color = '#ef4444';
                 btnElem.style.borderColor = '#ef4444';
                 clearConfirmTimeout = setTimeout(() => {
-                    btnElem.dataset.confirming = '';
+                    delete btnElem.dataset.confirming;
                     btnElem.innerHTML = btnElem.dataset.originalHtml || 'Clear Pipeline';
                     btnElem.style.color = '';
                     btnElem.style.borderColor = '';
@@ -992,16 +1031,26 @@
                 return;
             }
             clearTimeout(clearConfirmTimeout);
-            if (btnElem) btnElem.innerHTML = 'Clearing...';
+            delete btnElem.dataset.confirming;
+            btnElem.disabled = true;
+            btnElem.innerHTML = 'Cancelling queue...';
+
             try {
+                // Step 1: drain the AI scoring queue so no new jobs get picked up
+                await fetch('/api/v1/jobs/cancel-queue', { method: 'POST' });
+
+                // Step 2: delete everything
+                btnElem.innerHTML = 'Clearing...';
                 const response = await fetch('/api/v1/jobs/clear', { method: 'POST' });
                 if (response.ok) {
                     window.location.reload();
                 } else {
-                    showToast('Failed to clear jobs. Ensure the backend handles this cleanly.', 'error');
+                    throw new Error('Clear failed');
                 }
             } catch (e) {
-                showToast('Error clearing jobs.', 'error');
+                btnElem.disabled = false;
+                btnElem.innerHTML = btnElem.dataset.originalHtml || 'Clear Pipeline';
+                showToast('Error clearing pipeline.', 'error');
             }
         }
         // (Duplicate startAiMatch removed for cleaner JS hoisting)

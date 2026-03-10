@@ -47,7 +47,7 @@ public class OllamaMatchmakerService {
     @Value("${spring.ai.ollama.base-url:http://localhost:11434}")
     private String ollamaBaseUrl;
 
-    @Value("${hireops.pdf.storage-path:./data/resumes/}")
+    @Value("${app.settings.pdf-storage-path:/app/data/pdfs}")
     private String pdfStoragePath;
 
     public OllamaMatchmakerService(ChatClient.Builder chatClientBuilder,
@@ -178,6 +178,16 @@ public class OllamaMatchmakerService {
             String generatedPdfPath = pdfService.generateCoverLetterPdf(result.coverLetterMarkdown(), pdfStoragePath,
                     clFileName);
 
+            // Warn loudly if the file was not actually written — helps debug volume issues
+            java.io.File writtenPdf = new java.io.File(generatedPdfPath);
+            if (!writtenPdf.exists() || writtenPdf.length() == 0) {
+                log.error("CRITICAL: Cover letter PDF was not written to disk at '{}'. " +
+                        "Check that the Docker volume is mounted at '{}' and the app has write permissions.",
+                        generatedPdfPath, pdfStoragePath);
+            } else {
+                log.info("Cover letter PDF written: {} ({} bytes)", generatedPdfPath, writtenPdf.length());
+            }
+
             // 6. Create Application Record
             Application application = new Application();
             application.setJobPosting(job);
@@ -301,23 +311,55 @@ public class OllamaMatchmakerService {
         String jobTitle = job.getTitle() != null ? job.getTitle() : "die ausgeschriebene Stelle";
         String company = job.getCompany() != null ? job.getCompany() : "Ihr Unternehmen";
 
-        String prompt = "You are a senior German cover letter writer. Analyse the Job Description vs. the CV below and return ONLY the JSON object shown. No other text.\n\n"
-                + "CRITICAL DIRECTIVE: Do NOT remember or reference previous prompts. Do NOT state that you have 'already graded' this. Treat this as a completely fresh task regardless of duplication. You MUST output JSON.\n\n"
-                + "REQUIRED JSON (fill all fields, copy exact structure):\n"
-                + "{\"score\": 82, \"coverLetterMarkdown\": \"<full letter here>\", \"analysis\": [\"bullet 1\", \"bullet 2\"]}\n\n"
-                + "=== RULES ===\n"
-                + "score: integer 0-100 measuring how well the CV matches the job requirements.\n\n"
-                + "coverLetterMarkdown: A professional German cover letter with ALL of these:\n"
-                + "  - Betreff line naming the position '" + jobTitle + "'\n"
-                + "  - Anrede: 'Sehr geehrte Damen und Herren,'\n"
-                + "  - Paragraph 1 (3-4 sentences): Express interest in '" + company + "'.\n"
-                + "  - Paragraph 2 (4-5 sentences): Map SPECIFIC items from CV to JD. Name exact technologies.\n"
-                + "  - Grußformel: 'Mit freundlichen Grüßen,\\n[Applicant Name]'\n"
-                + "  - Escape all double quotes as \\\".\n\n"
-                + "analysis: A JSON Array of 3 exact strings in German explaining the score. E.g. [\"• Match in...\", \"• Lack of...\", \"• Best fit...\"]\n\n"
-                + "Return ONLY the JSON object. No other text.\n\n"
-                + "### Job Description\n" + jdTrimmed + "\n\n"
-                + "### Candidate CV\n" + cvTrimmed;
+        String prompt = "You are a rigorous technical recruiter AND a professional German cover letter ghostwriter.\n"
+                + "Analyse the Job Description (JD) against the Candidate CV below and return ONLY a single raw JSON object — no markdown fences, no prose.\n\n"
+                + "REQUIRED JSON STRUCTURE (copy exactly, replace placeholder values):\n"
+                + "{\"score\": 72, \"coverLetterMarkdown\": \"<letter>\", \"analysis\": [\"• ...\", \"• ...\", \"• ...\"]}\n\n"
+
+                + "============================\n"
+                + "SECTION 1 — REALISTIC SCORING RUBRIC\n"
+                + "============================\n"
+                + "Score is an integer 0-100 representing the HONEST probability this CV lands an interview.\n"
+                + "Use this calibrated scale:\n"
+                + "  90-100 = Near-perfect match: candidate meets virtually every mandatory AND nice-to-have requirement. Rare.\n"
+                + "  75-89  = Strong match: meets all mandatory requirements, some gaps on nice-to-haves.\n"
+                + "  55-74  = Moderate match: meets most mandatory requirements but has notable skill or experience gaps.\n"
+                + "  35-54  = Weak match: meets some requirements but meaningful skill/seniority gaps that would likely get filtered.\n"
+                + "  0-34   = Poor match: CV is largely misaligned — wrong domain, seniority, or tech stack.\n"
+                + "Be honest and conservative. Real-world hiring is competitive. Do not inflate scores.\n\n"
+
+                + "Mandatory requirements to check (extract from JD):\n"
+                + "- Required technologies and their seniority levels\n"
+                + "- Minimum years of experience\n"
+                + "- Required languages (German proficiency level if mentioned)\n"
+                + "- Domain or industry knowledge requirements\n"
+                + "For each mandatory requirement not met by the CV, deduct 8-15 points.\n\n"
+
+                + "============================\n"
+                + "SECTION 2 — COVER LETTER RULES\n"
+                + "============================\n"
+                + "Write a formal German cover letter (Anschreiben) following DIN 5008 conventions.\n"
+                + "Language: professional written German (C1 level).\n\n"
+                + "MANDATORY STRUCTURE — include ALL of these, in this order:\n"
+                + "1. Betreff: Bewerbung als " + jobTitle + "\n"
+                + "2. Anrede: Sehr geehrte Damen und Herren,\n"
+                + "3. Paragraph 1 (2-3 sentences): State the position applied for, express genuine interest in " + company + "'s work. Reference something concrete from the JD.\n"
+                + "4. Paragraph 2 (3-5 sentences): Map SPECIFIC CV evidence directly to JD requirements. Name exact technologies, measurable achievements, and seniority. Never use generic phrases like 'I am a fast learner'.\n"
+                + "5. Paragraph 3 (2-3 sentences): Express motivation to join the team, availability, invitation to interview.\n"
+                + "6. Grußformel: Mit freundlichen Grüßen,\n[Vorname Nachname]\n\n"
+                + "DO NOT write a salutation address block or date — those are added separately.\n"
+                + "DO escape all double-quote characters inside the JSON string as \\\".\n"
+                + "Total letter length: 200-320 words.\n\n"
+
+                + "============================\n"
+                + "SECTION 3 — ANALYSIS ARRAY\n"
+                + "============================\n"
+                + "analysis: Exactly 3-5 strings in German, each starting with a bullet '• '. Be specific.\n"
+                + "Example items: '• Starke Übereinstimmung bei Java 17 und Spring Boot (JD fordert 3+ Jahre, CV zeigt 5 Jahre)', '• Fehlende Kubernetes-Erfahrung — JD nennt dies als Pflichtanforderung', '• Sprachkompetenz: CV zeigt Deutsch B2, JD erfordert C1 — leichte Lücke'\n\n"
+
+                + "Return ONLY the JSON object. No other text before or after it.\n\n"
+                + "=== JOB DESCRIPTION ===\n" + jdTrimmed + "\n\n"
+                + "=== CANDIDATE CV ===\n" + cvTrimmed;
 
         try {
             ChatResponse response = chatClient.prompt()

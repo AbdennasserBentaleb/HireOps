@@ -121,8 +121,41 @@ public class HireOpsApiController {
         return ResponseEntity.ok(userProfileRepository.save(profile));
     }
 
+    /**
+     * POST /api/v1/jobs/cancel-queue
+     * Resets all QUEUED and PROCESSING jobs back to IDLE so the scheduler
+     * stops picking them up. Safe to call while scoring is in progress.
+     */
+    @PostMapping("/jobs/cancel-queue")
+    public ResponseEntity<Map<String, Object>> cancelQueue() {
+        List<JobPosting> activeJobs = jobPostingRepository.findAll().stream()
+                .filter(j -> j.getProcessingStatus() == ProcessingStatus.QUEUED
+                          || j.getProcessingStatus() == ProcessingStatus.PROCESSING)
+                .collect(Collectors.toList());
+        activeJobs.forEach(j -> {
+            j.setProcessingStatus(ProcessingStatus.IDLE);
+            jobPostingRepository.save(j);
+        });
+        logger.info("cancel-queue: reset {} jobs to IDLE", activeJobs.size());
+        return ResponseEntity.ok(Map.of("cancelled", activeJobs.size(),
+                "message", "Queue drained — " + activeJobs.size() + " job(s) cancelled."));
+    }
+
+    /**
+     * POST /api/v1/jobs/clear
+     * Drains the queue first, then wipes all jobs and applications.
+     */
     @PostMapping("/jobs/clear")
     public ResponseEntity<Map<String, String>> clearJobs() {
+        // 1. Stop the scheduler from picking up any more queued jobs
+        jobPostingRepository.findAll().stream()
+                .filter(j -> j.getProcessingStatus() == ProcessingStatus.QUEUED
+                          || j.getProcessingStatus() == ProcessingStatus.PROCESSING)
+                .forEach(j -> {
+                    j.setProcessingStatus(ProcessingStatus.IDLE);
+                    jobPostingRepository.save(j);
+                });
+        // 2. Remove all data
         applicationRepository.deleteAll();
         jobPostingRepository.deleteAll();
         return ResponseEntity.ok(Map.of("message", "All jobs cleared"));

@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  pgvector:
+    image: pgvector/pgvector:pg16
+    container_name: hireops-postgres-vector
+    environment:
+      POSTGRES_DB: hireops_db
+      POSTGRES_USER: hireops_user
+      POSTGRES_PASSWORD: hireops_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - hireops_pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  hireops_pg_data:

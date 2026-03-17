@@ -47,7 +47,7 @@ public class PdfService {
         String htmlBody = renderer.render(parser.parse(markdown));
 
         // Professional DIN-5008-style cover letter CSS
-        String fullHtml = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>" +
+        String fullHtml = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><style>" +
                 "@page { margin: 2.5cm 2.5cm 2cm 2.5cm; }" +
                 "body { font-family: 'Arial', 'Helvetica', sans-serif; font-size: 11pt; " +
                 "       line-height: 1.65; color: #1a1a1a; margin: 0; padding: 0; }" +

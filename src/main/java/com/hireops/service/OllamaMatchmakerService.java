@@ -174,8 +174,11 @@ public class OllamaMatchmakerService {
             jobPostingRepository.save(job);
 
             // 5. Generate Real Cover Letter PDF
+            // Strip any non-standard XML tags the LLM may have added (e.g. <letter>, <anschreiben>)
+            // before feeding to openhtmltopdf's strict XHTML parser.
+            String safeLetter = sanitizeCoverLetter(result.coverLetterMarkdown());
             String clFileName = "cl_" + jobId.toString() + ".pdf";
-            String generatedPdfPath = pdfService.generateCoverLetterPdf(result.coverLetterMarkdown(), pdfStoragePath,
+            String generatedPdfPath = pdfService.generateCoverLetterPdf(safeLetter, pdfStoragePath,
                     clFileName);
 
             // Warn loudly if the file was not actually written — helps debug volume issues
@@ -314,7 +317,7 @@ public class OllamaMatchmakerService {
         String prompt = "You are a rigorous technical recruiter AND a professional German cover letter ghostwriter.\n"
                 + "Analyse the Job Description (JD) against the Candidate CV below and return ONLY a single raw JSON object — no markdown fences, no prose.\n\n"
                 + "REQUIRED JSON STRUCTURE (copy exactly, replace placeholder values):\n"
-                + "{\"score\": 72, \"coverLetterMarkdown\": \"<letter>\", \"analysis\": [\"• ...\", \"• ...\", \"• ...\"]}\n\n"
+                + "{\"score\": 72, \"coverLetterMarkdown\": \"WRITE_THE_COVER_LETTER_HERE\", \"analysis\": [\"• ...\", \"• ...\", \"• ...\"]}\n\n"
 
                 + "============================\n"
                 + "SECTION 1 — REALISTIC SCORING RUBRIC\n"
@@ -416,5 +419,37 @@ public class OllamaMatchmakerService {
 
         cleaned = cleaned.substring(start, end + 1);
         return cleaned.trim();
+    }
+
+    /**
+     * Strips non-standard HTML/XML tags from LLM-generated cover letter text before
+     * it is fed into openhtmltopdf's strict XHTML parser.
+     * LLMs sometimes wrap output in tags like <letter>, <anschreiben>, <output>, <result>
+     * which are not valid XHTML and cause a parse error. This method removes unknown tags
+     * while preserving whitelisted standard HTML formatting tags and their content.
+     */
+    private String sanitizeCoverLetter(String markdown) {
+        if (markdown == null || markdown.isBlank()) return markdown;
+
+        java.util.Set<String> allowed = java.util.Set.of(
+                "p", "br", "b", "strong", "em", "i",
+                "ul", "ol", "li",
+                "h1", "h2", "h3", "h4", "h5", "h6",
+                "blockquote", "span", "div", "a", "hr", "pre", "code",
+                "table", "tr", "td", "th", "thead", "tbody");
+
+        Pattern p = Pattern.compile("<(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>");
+        Matcher m = p.matcher(markdown);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            if (allowed.contains(m.group(2).toLowerCase())) {
+                m.appendReplacement(sb, Matcher.quoteReplacement(m.group(0)));
+            } else {
+                log.warn("sanitizeCoverLetter: stripped non-standard tag <{}>", m.group(2));
+                m.appendReplacement(sb, "");
+            }
+        }
+        m.appendTail(sb);
+        return sb.toString();
     }
 }

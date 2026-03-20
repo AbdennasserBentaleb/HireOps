@@ -868,8 +868,8 @@
                 
                 <!-- Modal Tabs -->
                 <div style="display: flex; gap: 0.5rem; width: 100%; font-size: 0.8rem; margin-top: 0.25rem;">
-                    <button id="tabBtnLetter" class="px-3 py-1.5 font-semibold text-white border-b-2 border-indigo-500" onclick="switchModalTab('letter')" style="background:transparent; border-radius:0; border-top:0; border-left:0; border-right:0;">Cover Letter</button>
-                    <button id="tabBtnAnalysis" class="px-3 py-1.5 font-semibold text-gray-400 hover:text-white" onclick="switchModalTab('analysis')" style="background:transparent; border-radius:0; border:none;">AI Match Analysis</button>
+                    <button id="tabBtnLetter" class="tab-btn-active" onclick="switchModalTab('letter')">Cover Letter</button>
+                    <button id="tabBtnAnalysis" class="tab-btn-inactive" onclick="switchModalTab('analysis')">AI Match Analysis</button>
                 </div>
             </div>
             
@@ -947,20 +947,14 @@
             const contentAnalysis = document.getElementById('tabContentAnalysis');
 
             if (tab === 'analysis') {
-                btnLetter.className = "px-3 py-1.5 font-semibold text-gray-400 hover:text-white";
-                btnLetter.style.borderBottom = "none";
-                
-                btnAnalysis.className = "px-3 py-1.5 font-semibold text-white border-b-2 border-indigo-500";
-                btnAnalysis.style.borderBottom = "2px solid #6366f1";
+                btnLetter.className = "tab-btn-inactive";
+                btnAnalysis.className = "tab-btn-active";
 
                 contentLetter.style.display = "none";
                 contentAnalysis.style.display = "block";
             } else {
-                btnAnalysis.className = "px-3 py-1.5 font-semibold text-gray-400 hover:text-white";
-                btnAnalysis.style.borderBottom = "none";
-
-                btnLetter.className = "px-3 py-1.5 font-semibold text-white border-b-2 border-indigo-500";
-                btnLetter.style.borderBottom = "2px solid #6366f1";
+                btnAnalysis.className = "tab-btn-inactive";
+                btnLetter.className = "tab-btn-active";
 
                 contentLetter.style.display = "flex";
                 contentAnalysis.style.display = "none";

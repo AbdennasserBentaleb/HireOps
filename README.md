@@ -122,3 +122,7 @@ src/main/java/com/hireops/
 
 ## License
 MIT
+
+
+### Forward-Compatibility Notice
+> **Note:** This project intentionally uses Java 25 (LTS Preview) and Spring Boot 3.4/3.5 to demonstrate forward-compatibility and readiness for the next LTS wave in enterprise environments.

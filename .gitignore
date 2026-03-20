@@ -37,3 +37,10 @@ app_logs_latest.txt
 
 # Generated PDF files — runtime artefacts, not source
 *.pdf
+
+# Enterprise / OS overrides
+.DS_Store
+.idea/
+.vscode/
+*.iml
+*.log
